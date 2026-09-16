@@ -4,11 +4,6 @@
 #   irm https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.ps1 | iex
 #
 
-param(
-    [Parameter(Position = 0)]
-    [string]$Version = "1.0.6"
-)
-
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $ProgressPreference = 'SilentlyContinue'
@@ -16,26 +11,17 @@ $ProgressPreference = 'SilentlyContinue'
 Write-Host ""
 Write-Host "  ========================================" -ForegroundColor Cyan
 Write-Host "       Astro CLI - Installing..." -ForegroundColor White
-Write-Host "       Agentic AI Coding Assistant" -ForegroundColor Gray
+Write-Host "       Autonomous AI Coding Assistant" -ForegroundColor Gray
 Write-Host "  ========================================" -ForegroundColor Cyan
 Write-Host ""
 
-$AstroDir = Join-Path $env:USERPROFILE '.astro'
-$BinDir = Join-Path $AstroDir 'bin'
-New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
+$TempInstaller = Join-Path $env:TEMP "astro-cli-windows-x64.exe"
+$DownloadUrl = "https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-cli-windows-x64.exe"
+$FallbackUrl = "https://github.com/cyberuz001/astro-cli/releases/latest/download/astro-cli-windows-x64.exe"
 
-$Arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'aarch64' } else { 'x86_64' }
-$Platform = "windows-$Arch"
-$BinaryName = "astro-$Version-$Platform.exe"
-$DestFile = Join-Path $BinDir "astro.exe"
+Write-Host "  [1/3] Downloading Astro CLI package..." -ForegroundColor White
 
-$Repo = if ($env:ASTRO_RELEASE_REPO) { $env:ASTRO_RELEASE_REPO } else { "cyberuz001/astro-cli" }
-$DownloadUrl = "https://github.com/$Repo/releases/download/v$Version/$BinaryName"
-$FallbackUrl = "https://github.com/$Repo/releases/latest/download/$BinaryName"
-
-Write-Host "  [1/3] Downloading Astro CLI v$Version ($Platform)..." -ForegroundColor White
-
-function Download-WithProgress([string]$Url, [string]$OutPath) {
+function Download-Package([string]$Url, [string]$OutPath) {
     $request = [System.Net.HttpWebRequest]::Create($Url)
     $request.Timeout = 300000
     $request.AutomaticDecompression = [System.Net.DecompressionMethods]::GZip -bor [System.Net.DecompressionMethods]::Deflate
@@ -70,41 +56,26 @@ function Download-WithProgress([string]$Url, [string]$OutPath) {
 }
 
 try {
-    Download-WithProgress $DownloadUrl $DestFile
+    Download-Package $DownloadUrl $TempInstaller
 } catch {
     Write-Host "        Retrying from latest release..." -ForegroundColor Yellow
-    Download-WithProgress $FallbackUrl $DestFile
+    Download-Package $FallbackUrl $TempInstaller
 }
 
-Write-Host "  [2/3] Configuring environment (PATH)..." -ForegroundColor White
+Write-Host "  [2/3] Setting up binaries and environment..." -ForegroundColor White
+
+$proc = Start-Process -FilePath $TempInstaller -ArgumentList "-y" -Wait -PassThru -WindowStyle Hidden
+
+$BinDir = Join-Path $env:USERPROFILE ".astroin"
 $CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($CurrentPath -notlike "*$BinDir*") {
     [Environment]::SetEnvironmentVariable("Path", "$BinDir;$CurrentPath", "User")
-    Write-Host "        Added $BinDir to PATH" -ForegroundColor Green
-} else {
-    Write-Host "        $BinDir already in PATH" -ForegroundColor DarkGray
 }
+$env:Path = "$BinDir;" + $env:Path
 
-Write-Host "  [3/3] Setting up configuration..." -ForegroundColor White
-$ConfigFile = Join-Path $AstroDir "config.toml"
-if (-not (Test-Path $ConfigFile)) {
-    $cfg = @"
-[cli]
-installer = "gh-release"
-auto_update = true
+Remove-Item -Path $TempInstaller -Force -ErrorAction SilentlyContinue
 
-[ui]
-permission_mode = "always-approve"
-theme = "auto"
-
-[models]
-default = "photon-3.7"
-
-[endpoints]
-cli_chat_proxy_base_url = "http://localhost:5544/v1"
-"@
-    Set-Content -Path $ConfigFile -Value $cfg -Encoding UTF8
-}
+Write-Host "  [3/3] Installation complete!" -ForegroundColor White
 
 Write-Host ""
 Write-Host "  ========================================" -ForegroundColor Green
