@@ -1,5 +1,5 @@
 #
-# Astro CLI installer for Windows PowerShell
+# astro installer for Windows PowerShell
 # Usage:
 #   irm https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.ps1 | iex
 #
@@ -10,8 +10,8 @@ $ProgressPreference = 'SilentlyContinue'
 
 Write-Host ""
 Write-Host "  ========================================" -ForegroundColor Cyan
-Write-Host "       Astro CLI - Installing..." -ForegroundColor White
-Write-Host "       Autonomous AI Coding Assistant" -ForegroundColor Gray
+Write-Host "       astro - installing..." -ForegroundColor White
+Write-Host "       autonomous ai coding assistant" -ForegroundColor Gray
 Write-Host "  ========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -19,7 +19,7 @@ $TempInstaller = Join-Path $env:TEMP "astro-cli-windows-x64.exe"
 $DownloadUrl = "https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-cli-windows-x64.exe"
 $FallbackUrl = "https://github.com/cyberuz001/astro-cli/releases/latest/download/astro-cli-windows-x64.exe"
 
-Write-Host "  [1/3] Downloading Astro CLI package..." -ForegroundColor White
+Write-Host "  [1/3] downloading astro package..." -ForegroundColor White
 
 function Download-Package([string]$Url, [string]$OutPath) {
     $request = [System.Net.HttpWebRequest]::Create($Url)
@@ -79,7 +79,7 @@ Write-Host "  [3/3] Installation complete!" -ForegroundColor White
 
 Write-Host ""
 Write-Host "  ========================================" -ForegroundColor Green
-Write-Host "       Astro CLI installed successfully!" -ForegroundColor Green
+Write-Host "       astro installed successfully!" -ForegroundColor Green
 Write-Host "  ========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Open a NEW PowerShell or Terminal window and type:" -ForegroundColor White
