@@ -1,0 +1,57 @@
+[
+  {
+    "id": "vortex",
+    "name": "vortex",
+    "badge": "FLAGSHIP / MOST POWERFUL",
+    "speed": "High Throughput (~2.0s)",
+    "reasoning": "Deep Multistep Reasoning",
+    "context": "1,000,000 Tokens",
+    "desc": "The most powerful frontier reasoning model. Engineered for full-repository refactoring, complex system architecture, multi-turn bug triage, and autonomous execution.",
+    "color": "border-[#FF5E1E] text-[#FF5E1E]",
+    "accent": "#FF5E1E"
+  },
+  {
+    "id": "nebula-high",
+    "name": "nebula-high",
+    "badge": "HEAVY AGENTIC",
+    "speed": "Moderate (~1.5s - 2.5s)",
+    "reasoning": "Rigorous Verification & Deep Search",
+    "context": "200,000 Tokens",
+    "desc": "Specialized for autonomous subagent workflows, multi-tool scheduling, deep repository search, and systematic test-driven development cycles.",
+    "color": "border-[#FF9900] text-[#FF9900]",
+    "accent": "#FF9900"
+  },
+  {
+    "id": "nebula",
+    "name": "nebula",
+    "badge": "BALANCED DAILY DRIVER",
+    "speed": "Standard (~1.0s - 1.8s)",
+    "reasoning": "Steady Engineering Precision",
+    "context": "200,000 Tokens",
+    "desc": "High-efficiency daily driver model. Balanced for day-to-day coding, interactive CLI chat, refactoring, and seamless git workflows with minimal token overhead.",
+    "color": "border-[#E07A5F] text-[#E07A5F]",
+    "accent": "#E07A5F"
+  },
+  {
+    "id": "photon-3.8",
+    "name": "photon-3.8",
+    "badge": "NEW / SUB-30MS",
+    "speed": "Sub-30ms TTFT",
+    "reasoning": "Instant Pair-Programming",
+    "context": "128,000 Tokens",
+    "desc": "Next-generation ultra-fast coding model. Designed for real-time terminal completions, fast shell scripts, and rapid prototyping.",
+    "color": "border-[#00FF66] text-[#00FF66]",
+    "accent": "#00FF66"
+  },
+  {
+    "id": "photon-3.7",
+    "name": "photon-3.7",
+    "badge": "LOW LATENCY",
+    "speed": "Sub-50ms TTFT",
+    "reasoning": "Instant Inline Synthesis",
+    "context": "128,000 Tokens",
+    "desc": "Ultra-fast inference engine for instant terminal autocomplete, single-line edits, lightning unit test generation, and pair-programming.",
+    "color": "border-[#FFB703] text-[#FFB703]",
+    "accent": "#FFB703"
+  }
+]
