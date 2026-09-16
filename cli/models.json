@@ -40,8 +40,8 @@
     "reasoning": "Instant Pair-Programming",
     "context": "128,000 Tokens",
     "desc": "Next-generation ultra-fast coding model. Designed for real-time terminal completions, fast shell scripts, and rapid prototyping.",
-    "color": "border-[#00FF66] text-[#00FF66]",
-    "accent": "#00FF66"
+    "color": "border-[#FFAE19] text-[#FFAE19]",
+    "accent": "#FFAE19"
   },
   {
     "id": "photon-3.7",
