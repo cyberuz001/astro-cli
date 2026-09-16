@@ -1,54 +1,54 @@
-﻿# Astro CLI
+﻿# astro
 
-> Autonomous AI coding assistant for your terminal.
+> autonomous agentic coding assistant for your terminal.
 
-[![Release](https://img.shields.io/github/v/release/cyberuz001/astro-cli?color=blue&label=version)](https://github.com/cyberuz001/astro-cli/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/cyberuz001/astro-cli)
+[![Release](https://img.shields.io/github/v/release/cyberuz001/astro-cli?color=orange&label=version)](https://github.com/cyberuz001/astro-cli/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-22c55e.svg)](https://github.com/cyberuz001/astro-cli)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](https://github.com/cyberuz001/astro-cli)
 
 ---
 
-## Installation
+## quick install
 
-### Windows (PowerShell)
+### windows (powershell)
 ```powershell
 irm https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.ps1 | iex
 ```
 
-### Linux & macOS
+### linux & macos
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.sh | bash
 ```
 
 ---
 
-## Features
+## features
 
-- **Models**: `photon-3.8` (fast coding), `nebula` (deep reasoning), `vortex` (architecture).
-- **Aceternity UI**: Built-in catalog of 90+ animated components (Bento Grid, 3D Card, Aurora, Lamp Effect).
-- **Self-Contained**: Standalone runtime — no Node.js or external toolchain required.
-- **Auto-Update**: Seamless background updates via `astro update`.
+- **models**: `photon-3.8` (fast coding), `nebula` (deep reasoning), `vortex` (architecture).
+- **aceternity ui**: 90+ animated React & Next.js components built-in.
+- **self-contained**: standalone runtime with zero external dependencies.
+- **auto-update**: seamless background updates via `astro update`.
 
 ---
 
-## Usage
+## usage
 
 ```bash
 astro
 ```
 
-Check available models:
+models:
 ```bash
 /models
 ```
 
-Update to the latest version:
+update:
 ```bash
 astro update
 ```
 
 ---
 
-## License
+## license
 
-Proprietary © 2026 Astro. All rights reserved.
+proprietary © 2026 astro. all rights reserved.
