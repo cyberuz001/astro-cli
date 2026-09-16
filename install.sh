@@ -2,8 +2,7 @@
 #
 # astro installer for Linux & macOS
 # Usage:
-#   curl -fsSL https://astro-cli.vercel.app/install.sh | bash
-#   or: curl -fsSL https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.sh | bash
 #
 
 set -e
@@ -22,26 +21,41 @@ echo -e "  ${MUTED}https://astro-cli.vercel.app${RESET}"
 echo -e "  ${DIM}--------------------------------------------------${RESET}"
 echo ""
 
-TEMP_INSTALLER="/tmp/astro-cli-linux-x64.run"
-DOWNLOAD_URL="https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-cli-linux-x64.run"
-FALLBACK_URL="https://github.com/cyberuz001/astro-cli/releases/latest/download/astro-cli-linux-x64.run"
+INSTALL_DIR="$HOME/.astro/bin"
+mkdir -p "$INSTALL_DIR"
 
-echo -e "  ${AMBER}>${RESET} ${WHITE}[1/3] downloading astro package...${RESET}"
+TARGET_BIN="$INSTALL_DIR/astro"
+DOWNLOAD_URL="https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-1.0.6-linux-x86_64"
+FALLBACK_URL="https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-cli-linux-x64.run"
 
-if curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_INSTALLER" 2>/dev/null; then
+echo -e "  ${AMBER}>${RESET} ${WHITE}[1/3] downloading astro binary...${RESET}"
+
+if curl -fL --progress-bar "$DOWNLOAD_URL" -o "$TARGET_BIN"; then
     echo -e "        ${MUTED}download complete.${RESET}"
 else
-    echo -e "        ${AMBER}retrying from latest release...${RESET}"
-    curl -fsSL "$FALLBACK_URL" -o "$TEMP_INSTALLER"
+    echo -e "        ${AMBER}retrying fallback binary...${RESET}"
+    curl -fL --progress-bar "$FALLBACK_URL" -o "$TARGET_BIN"
 fi
 
-chmod +x "$TEMP_INSTALLER"
+chmod +x "$TARGET_BIN"
 
-echo -e "  ${AMBER}>${RESET} ${WHITE}[2/3] installing binaries and environment...${RESET}"
+echo -e "  ${AMBER}>${RESET} ${WHITE}[2/3] configuring environment path...${RESET}"
 
-"$TEMP_INSTALLER"
+# Configure PATH in shell configs
+for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -f "$rc" ]; then
+        if ! grep -q "$INSTALL_DIR" "$rc"; then
+            echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> "$rc"
+        fi
+    fi
+done
 
-rm -f "$TEMP_INSTALLER"
+# Try system-wide symlink if permissions allow
+if [ -w "/usr/local/bin" ]; then
+    ln -sf "$TARGET_BIN" /usr/local/bin/astro 2>/dev/null || true
+elif command -v sudo >/dev/null 2>&1; then
+    sudo ln -sf "$TARGET_BIN" /usr/local/bin/astro 2>/dev/null || true
+fi
 
 echo -e "  ${AMBER}>${RESET} ${WHITE}[3/3] installation complete!${RESET}"
 
@@ -50,8 +64,6 @@ echo -e "  ${DIM}--------------------------------------------------${RESET}"
 echo -e "  ${VORTEX}* astro installed successfully!${RESET}"
 echo -e "  ${DIM}--------------------------------------------------${RESET}"
 echo ""
-echo -e "  ${MUTED}Open a NEW terminal and type:${RESET}"
+echo -e "  ${MUTED}Open a NEW terminal (or run: source ~/.bashrc) and type:${RESET}"
 echo -e "    ${AMBER}astro${RESET}"
-echo ""
-echo -e "  ${MUTED}Documentation & Models:${RESET} ${VORTEX}https://astro-cli.vercel.app${RESET}"
 echo ""

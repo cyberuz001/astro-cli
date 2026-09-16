@@ -1,8 +1,7 @@
 #
 # astro installer for Windows PowerShell
 # Usage:
-#   irm https://astro-cli.vercel.app/install.ps1 | iex
-#   or: irm https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.ps1 | iex
 #
 
 $ErrorActionPreference = 'Stop'
@@ -24,7 +23,13 @@ Write-Host "  ${muted}https://astro-cli.vercel.app${reset}"
 Write-Host "  ${dim}--------------------------------------------------${reset}"
 Write-Host ""
 
-$TempInstaller = Join-Path $env:TEMP "astro-cli-windows-x64.exe"
+$AstroDir = Join-Path $env:USERPROFILE ".astro"
+$BinDir = Join-Path $AstroDir "bin"
+if (-not (Test-Path $BinDir)) {
+    New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
+}
+
+$TargetExe = Join-Path $BinDir "astro.exe"
 $DownloadUrl = "https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-cli-windows-x64.exe"
 $FallbackUrl = "https://github.com/cyberuz001/astro-cli/releases/latest/download/astro-cli-windows-x64.exe"
 
@@ -65,29 +70,27 @@ function Download-Package([string]$Url, [string]$OutPath) {
 }
 
 try {
-    Download-Package $DownloadUrl $TempInstaller
+    Download-Package $DownloadUrl $TargetExe
 } catch {
     Write-Host "        ${amber}Retrying from latest release...${reset}"
-    Download-Package $FallbackUrl $TempInstaller
+    Download-Package $FallbackUrl $TargetExe
 }
 
-Write-Host "  ${amber}>${reset} ${white}[2/3] setting up binaries and environment...${reset}"
+Write-Host "  ${amber}>${reset} ${white}[2/3] configuring environment and global PATH...${reset}"
 
-$proc = Start-Process -FilePath $TempInstaller -ArgumentList "-y" -Wait -PassThru -WindowStyle Hidden
-
-$AstroDir = Join-Path $env:USERPROFILE ".astro"
-$BinDir = Join-Path $AstroDir "bin"
-if (-not (Test-Path $BinDir)) {
-    New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-}
-
+# Configure User and Machine PATH
 $CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($CurrentPath -notlike "*$BinDir*") {
     [Environment]::SetEnvironmentVariable("Path", "$BinDir;$CurrentPath", "User")
 }
 $env:Path = "$BinDir;" + $env:Path
 
-Remove-Item -Path $TempInstaller -Force -ErrorAction SilentlyContinue
+# If running elevated or C:\Windows is writable, copy globally
+if (Test-Path "C:\Windows") {
+    try {
+        Copy-Item -Path $TargetExe -Destination "C:\Windowsstro.exe" -Force -ErrorAction SilentlyContinue
+    } catch {}
+}
 
 Write-Host "  ${amber}>${reset} ${white}[3/3] installation complete!${reset}"
 
