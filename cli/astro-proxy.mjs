@@ -1355,6 +1355,16 @@ const server = createServer((req, res) => {
   if (req.method === 'POST' && (p === '/v1/stt' || p === '/v1/audio/transcriptions'))
     return handleSTT(req, res);
   if (req.method === 'GET' && p === '/v1/models') return handleModels(req, res);
+  if ((req.method === 'GET' || req.method === 'POST') && (p === '/auth/login' || p === '/v1/auth/login' || p === '/login')) {
+    startOAuth2Login().then(() => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'success', message: 'Logged in successfully', email: credential?.email }));
+    }).catch(err => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'error', message: err.message }));
+    });
+    return;
+  }
   if (req.method === 'GET' && p.startsWith('/v1/user')) return handleUser(req, res);
   if (req.method === 'GET' && p === '/v1/billing') return handleBilling(req, res);
 
