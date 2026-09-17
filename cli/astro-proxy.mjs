@@ -8,6 +8,8 @@
 import { createServer, request as httpRequest } from 'http';
 import https from 'https';
 import crypto from 'crypto';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import path from 'path';
 import { exec } from 'child_process';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -233,9 +235,6 @@ function decrypt(ciphertext) {
 // Stores credentials in ~/.astro/auth.json
 // ================================================================
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
 
 const HOME_DIR = process.env.USERPROFILE || process.env.HOME || 'C:/Users/user';
 const ASTRO_DIR = path.join(HOME_DIR, '.astro');
