@@ -35,9 +35,9 @@ const STATIC_SALT = 'omniroute-field-encryption-v1';
 
 // Model mapping: astro name -> Gemini model (dynamic, auto-synced with central registry)
 const DEFAULT_BACKEND_MAP = {
-  'vortex':     'gemini-3.1-pro-low',
-  'nebula-high':'gemini-3.1-pro-low',
-  'nebula':     'gemini-3.1-pro-low',
+  'vortex':     'gemini-3.8-flash-high',
+  'nebula-high':'gemini-3.8-flash-high',
+  'nebula':     'gemini-3.7-flash-high',
   'photon-3.8': 'gemini-3.8-flash-high',
   'photon-3.7': 'gemini-3.7-flash-high'
 };
@@ -103,10 +103,10 @@ async function fetchAndUpdateModels() {
         const id = m.id;
         if (!id) continue;
         const backend = m.backend || DEFAULT_BACKEND_MAP[id] || (
-          id.includes('vortex') ? 'gemini-3.1-pro-low' :
-          id.includes('nebula') ? 'gemini-3.1-pro-low' :
           id.includes('3.8') ? 'gemini-3.8-flash-high' :
           id.includes('3.7') ? 'gemini-3.7-flash-high' :
+          id.includes('vortex') ? 'gemini-3.8-flash-high' :
+          id.includes('nebula') ? 'gemini-3.7-flash-high' :
           'gemini-3.8-flash-high'
         );
         nextMap[id] = backend;
@@ -1097,7 +1097,7 @@ async function handleChatCompletions(req, res) {
       console.log(`[proxy] ${originalModel} -> ${upstreamModel} (${email})`);
       
       const tryRequest = (baseUrlIndex) => {
-        const baseUrls = ['https://daily-cloudcode-pa.googleapis.com', 'https://cloudcode-pa.googleapis.com', 'https://daily-cloudcode-pa.sandbox.googleapis.com', 'https://autopush-cloudcode-pa.sandbox.googleapis.com'];
+        const baseUrls = ['https://daily-cloudcode-pa.googleapis.com'];
         if (baseUrlIndex >= baseUrls.length) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: { message: "All base URLs failed", type: 'upstream_error' } }));
@@ -1133,7 +1133,7 @@ async function handleChatCompletions(req, res) {
             let errData = '';
             proxyRes.on('data', c => errData += c);
             proxyRes.on('end', () => {
-             console.error(`[proxy] Error (${baseUrl}): ${errData.substring(0, 300)}`);
+             console.error(`[proxy] Error (${baseUrl}) for ${upstreamModel}: ${errData}`);
               
               // Detect "Prohibited Use" / safety policy violation - return as normal text response
               if (errData.includes('Prohibited Use') || errData.includes('sensitive words') || errData.includes('use-policy')) {
@@ -1158,25 +1158,24 @@ async function handleChatCompletions(req, res) {
                 console.log(`[proxy] Retrying on next base URL...`);
                 tryRequest(baseUrlIndex + 1);
               } else {
-                // If ALL environments failed, emergency fallback to flash
-                if (upstreamModel !== 'gemini-3.7-flash-high' && (proxyRes.statusCode === 429 || proxyRes.statusCode === 400 || proxyRes.statusCode === 403)) {
-                  console.log(`[proxy] ALL environments failed for ${upstreamModel}. Emergency fallback to gemini-3.7-flash-high!`);
-                  upstreamModel = 'gemini-3.7-flash-high';
+                // If failed, emergency fallback to flash
+                if (upstreamModel !== 'gemini-2.5-flash' && (proxyRes.statusCode === 429 || proxyRes.statusCode === 400 || proxyRes.statusCode === 403 || proxyRes.statusCode === 503)) {
+                  console.log(`[proxy] Status ${proxyRes.statusCode} on ${upstreamModel}. Emergency fallback to gemini-2.5-flash!`);
+                  upstreamModel = 'gemini-2.5-flash';
                   envelope.model = upstreamModel;
                   
-                  // If still getting 400, try stripping tools entirely
-                  if (proxyRes.statusCode === 400 && errData.includes('parameters')) {
-                    console.log(`[proxy] Stripping tools due to persistent schema errors`);
+                  if (proxyRes.statusCode === 400 && (errData.includes('parameters') || errData.includes('INVALID_ARGUMENT'))) {
+                    console.log(`[proxy] Stripping tools due to schema/argument errors`);
                     delete envelope.request.tools;
                     delete envelope.request.toolConfig;
                   }
                   
                   envelopeStr = JSON.stringify(envelope);
-                  tryRequest(0); // restart the chain with flash
+                  tryRequest(0);
                   return;
                 }
                 
-                res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json' });
+                res.writeHead(proxyRes.statusCode || 500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: { message: errData, type: 'upstream_error' } }));
               }
             });
