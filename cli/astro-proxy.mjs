@@ -8,7 +8,7 @@
 import { createServer, request as httpRequest } from 'http';
 import https from 'https';
 import crypto from 'crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { createRequire } from 'module';
@@ -35,7 +35,7 @@ const STATIC_SALT = 'omniroute-field-encryption-v1';
 
 // Model mapping: astro name -> Gemini model (dynamic, auto-synced with central registry)
 const DEFAULT_BACKEND_MAP = {
-  'vortex':     'claude-opus-4-6-thinking',
+  'vortex':     'gemini-pro-agent',
   'nebula-high':'gemini-pro-agent',
   'nebula':     'gemini-3.1-pro-low',
   'photon-3.8': 'gemini-3.8-flash-high',
@@ -103,7 +103,7 @@ async function fetchAndUpdateModels() {
         const id = m.id;
         if (!id) continue;
         const backend = m.backend || DEFAULT_BACKEND_MAP[id] || (
-          id.includes('vortex') ? 'claude-opus-4-6-thinking' :
+          id.includes('vortex') ? 'gemini-pro-agent' :
           id.includes('nebula') ? (id.includes('high') ? 'gemini-pro-agent' : 'gemini-3.1-pro-low') :
           id.includes('3.8') ? 'gemini-3.8-flash-high' :
           id.includes('3.7') ? 'gemini-3.7-flash-high' :
@@ -239,6 +239,7 @@ function decrypt(ciphertext) {
 const HOME_DIR = process.env.USERPROFILE || process.env.HOME || 'C:/Users/user';
 const ASTRO_DIR = path.join(HOME_DIR, '.astro');
 const AUTH_FILE = path.join(ASTRO_DIR, 'proxy-auth.json');
+const CLI_AUTH_FILE = path.join(ASTRO_DIR, 'auth.json');
 const ONBOARD_URL = 'https://daily-cloudcode-pa.googleapis.com/v1internal:onboardUser';
 const OAUTH2_SCOPES = [
   'openid',
@@ -257,33 +258,94 @@ function ensureAstroDir() {
 
 function saveCredential() {
   ensureAstroDir();
+  // 1. Save to proxy-auth.json
   writeFileSync(AUTH_FILE, JSON.stringify({
     email: credential.email,
+    user_id: credential.userId || '109260544213694080767',
     refresh_token: credential.refreshToken,
     access_token: credential.accessToken,
-    project_id: credential.projectId,
+    project_id: credential.projectId || 'core-shell-4d9t3',
     expires_at: credential.expiresAt?.toISOString(),
   }, null, 2));
+
+  // 2. Also save to ~/.astro/auth.json for CLI compatibility!
+  try {
+    let cliAuth = {};
+    if (existsSync(CLI_AUTH_FILE)) {
+      try { cliAuth = JSON.parse(readFileSync(CLI_AUTH_FILE, 'utf8')); } catch {}
+    }
+    const scopeKey = `https://accounts.google.com::${GOOGLE_CLIENT_ID}`;
+    cliAuth[scopeKey] = {
+      key: credential.accessToken || '',
+      auth_mode: 'oidc',
+      create_time: new Date().toISOString(),
+      user_id: credential.userId || '109260544213694080767',
+      email: credential.email,
+      first_name: credential.firstName || 'Astro',
+      last_name: credential.lastName || 'User',
+      profile_image_asset_id: null,
+      coding_data_retention_opt_out: true,
+      refresh_token: credential.refreshToken,
+      expires_at: credential.expiresAt?.toISOString() || new Date(Date.now() + 3600000).toISOString(),
+      oidc_issuer: 'https://accounts.google.com',
+      oidc_client_id: GOOGLE_CLIENT_ID
+    };
+    writeFileSync(CLI_AUTH_FILE, JSON.stringify(cliAuth, null, 2));
+    console.log(`[proxy] Synced credentials to ${CLI_AUTH_FILE}`);
+  } catch (e) {
+    console.error('[proxy] Failed to sync auth.json:', e.message);
+  }
 }
 
 function loadCredential() {
+  // First, check ~/.astro/auth.json (primary CLI auth written by astro login)
   try {
-    if (!existsSync(AUTH_FILE)) return false;
-    const data = JSON.parse(readFileSync(AUTH_FILE, 'utf8'));
-    if (!data.refresh_token) return false;
-    credential = {
-      email: data.email || 'unknown',
-      accessToken: data.access_token || null,
-      refreshToken: data.refresh_token,
-      projectId: data.project_id || 'core-shell-4d9t3',
-      expiresAt: data.expires_at ? new Date(data.expires_at) : new Date(0),
-    };
-    console.log(`[proxy] Loaded credentials for ${credential.email} (project: ${credential.projectId})`);
-    return true;
+    if (existsSync(CLI_AUTH_FILE)) {
+      const cliData = JSON.parse(readFileSync(CLI_AUTH_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(cliData)) {
+        if (v && v.refresh_token) {
+          credential = {
+            email: v.email || 'user',
+            userId: v.user_id || '109260544213694080767',
+            firstName: v.first_name || 'Astro',
+            lastName: v.last_name || 'User',
+            accessToken: v.key || null,
+            refreshToken: v.refresh_token,
+            projectId: 'core-shell-4d9t3',
+            expiresAt: v.expires_at ? new Date(v.expires_at) : new Date(0),
+          };
+          console.log(`[proxy] Loaded credentials from auth.json for ${credential.email}`);
+          return true;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[proxy] Failed to load auth.json:', e.message);
+  }
+
+  // Second, check proxy-auth.json
+  try {
+    if (existsSync(AUTH_FILE)) {
+      const data = JSON.parse(readFileSync(AUTH_FILE, 'utf8'));
+      if (data.refresh_token) {
+        credential = {
+          email: data.email || 'unknown',
+          userId: data.user_id || '109260544213694080767',
+          firstName: 'Astro',
+          lastName: 'User',
+          accessToken: data.access_token || null,
+          refreshToken: data.refresh_token,
+          projectId: data.project_id || 'core-shell-4d9t3',
+          expiresAt: data.expires_at ? new Date(data.expires_at) : new Date(0),
+        };
+        console.log(`[proxy] Loaded credentials from proxy-auth.json for ${credential.email}`);
+        return true;
+      }
+    }
   } catch (e) {
     console.error('[proxy] Failed to load proxy-auth.json:', e.message);
-    return false;
   }
+  return false;
 }
 
 // Also try loading from OmniRoute DB as a migration path
@@ -644,14 +706,33 @@ function onboardUser(accessToken) {
 async function refreshAccessToken() {
   if (!credential?.refreshToken) throw new Error('No refresh token. Run: astro login');
   return new Promise((resolve, reject) => {
-    const params = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: credential.refreshToken, client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET });
-    const req = https.request({ hostname: 'oauth2.googleapis.com', path: '/token', method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'astro/1.0 proxy' } }, (res) => {
-      let data = ''; res.on('data', chunk => data += chunk);
+    const params = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: credential.refreshToken,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET
+    });
+    const postBody = params.toString();
+    const req = https.request({
+      hostname: 'oauth2.googleapis.com',
+      path: '/token',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(postBody),
+        'User-Agent': 'astro/1.0 proxy'
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
           if (json.access_token) {
             credential.accessToken = json.access_token;
+            if (json.refresh_token) {
+              credential.refreshToken = json.refresh_token;
+            }
             credential.expiresAt = new Date(Date.now() + (json.expires_in || 3599) * 1000);
             saveCredential();
             console.log(`[proxy] Token refreshed for ${credential.email}, expires: ${credential.expiresAt.toISOString()}`);
@@ -663,7 +744,9 @@ async function refreshAccessToken() {
         } catch (e) { reject(e); }
       });
     });
-    req.on('error', reject); req.write(params.toString()); req.end();
+    req.on('error', reject);
+    req.write(postBody);
+    req.end();
   });
 }
 
@@ -1206,23 +1289,40 @@ function handleModels(req, res) {
 }
 
 function handleBilling(req, res) {
-  const limits = Object.entries(MODEL_MAP).map(([name, realModel]) => {
-    const u = usageTracker[name] || { total: 0, hourly: [], weekly: [] };
-    return {
-      model: name, backend: realModel,
-      total_requests: u.total,
-      five_hour_requests: u.hourly ? u.hourly.length : 0,
-      weekly_requests: u.weekly ? u.weekly.length : 0
-    };
-  });
   res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ plan: 'premium', limits, usage: {}, 
-    accounts: credential ? [{ email: credential.email, project: credential.projectId }] : [] }));
+  res.end(JSON.stringify({
+    config: {
+      creditUsagePercent: 0.0,
+      currentPeriod: {
+        type: 'USAGE_PERIOD_TYPE_MONTHLY',
+        start: new Date(Date.now() - 86400000).toISOString(),
+        end: new Date(Date.now() + 30 * 86400000).toISOString()
+      },
+      isUnifiedBillingUser: true
+    },
+    onDemandEnabled: true,
+    subscriptionTier: 'SuperGrok'
+  }));
 }
 
 function handleUser(req, res) {
+  const userEmail = credential?.email || 'cyberuz8123@gmail.com';
+  const uid = credential?.userId || '109260544213694080767';
   res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ user_id: 'u_astro', subscription: { tier: 'premium', is_active: true } }));
+  res.end(JSON.stringify({
+    userId: uid,
+    user_id: uid,
+    email: userEmail,
+    firstName: credential?.firstName || 'Golibjon',
+    lastName: credential?.lastName || 'Tojialiyev',
+    subscriptionTier: 'SuperGrok',
+    subscription_tier: 'SuperGrok',
+    codingDataRetentionOptOut: true,
+    subscription: {
+      tier: 'SuperGrok',
+      is_active: true
+    }
+  }));
 }
 
 function handleOk(req, res) {
@@ -1350,11 +1450,11 @@ const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const p = url.pathname;
 
-  if (req.method === 'POST' && (p === '/v1/chat/completions' || p === '/v1/responses')) 
+  if (req.method === 'POST' && (p === '/v1/chat/completions' || p === '/chat/completions' || p === '/v1/responses' || p === '/responses')) 
     return handleChatCompletions(req, res);
   if (req.method === 'POST' && (p === '/v1/stt' || p === '/v1/audio/transcriptions'))
     return handleSTT(req, res);
-  if (req.method === 'GET' && p === '/v1/models') return handleModels(req, res);
+  if (req.method === 'GET' && (p === '/v1/models' || p === '/models')) return handleModels(req, res);
   if ((req.method === 'GET' || req.method === 'POST') && (p === '/auth/login' || p === '/v1/auth/login' || p === '/login')) {
     startOAuth2Login().then(() => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1365,13 +1465,34 @@ const server = createServer((req, res) => {
     });
     return;
   }
-  if (req.method === 'GET' && p.startsWith('/v1/user')) return handleUser(req, res);
-  if (req.method === 'GET' && p === '/v1/billing') return handleBilling(req, res);
+  if (req.method === 'GET' && (p.startsWith('/v1/user') || p.startsWith('/user'))) return handleUser(req, res);
+  if (req.method === 'GET' && (p === '/v1/billing' || p === '/billing')) return handleBilling(req, res);
+  if (req.method === 'GET' && (p === '/v1/settings' || p === '/settings')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({}));
+    return;
+  }
+  if (req.method === 'GET' && (p === '/v1/auto-topup-rule' || p === '/auto-topup-rule')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ rule: { enabled: false } }));
+    return;
+  }
 
   // All other endpoints - return OK to prevent retry errors
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({}));
 });
+
+// Clean stale locks on startup
+try {
+  if (existsSync(ASTRO_DIR)) {
+    for (const f of readdirSync(ASTRO_DIR)) {
+      if (f.endsWith('.lock')) {
+        try { unlinkSync(path.join(ASTRO_DIR, f)); } catch {}
+      }
+    }
+  }
+} catch {}
 
 // Load credentials on startup
 loadCredential();
