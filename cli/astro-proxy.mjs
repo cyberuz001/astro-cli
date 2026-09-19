@@ -35,8 +35,8 @@ const STATIC_SALT = 'omniroute-field-encryption-v1';
 
 // Model mapping: astro name -> Gemini model (dynamic, auto-synced with central registry)
 const DEFAULT_BACKEND_MAP = {
-  'vortex':     'gemini-pro-agent',
-  'nebula-high':'gemini-pro-agent',
+  'vortex':     'gemini-3.1-pro-low',
+  'nebula-high':'gemini-3.1-pro-low',
   'nebula':     'gemini-3.1-pro-low',
   'photon-3.8': 'gemini-3.8-flash-high',
   'photon-3.7': 'gemini-3.7-flash-high'
@@ -103,8 +103,8 @@ async function fetchAndUpdateModels() {
         const id = m.id;
         if (!id) continue;
         const backend = m.backend || DEFAULT_BACKEND_MAP[id] || (
-          id.includes('vortex') ? 'gemini-pro-agent' :
-          id.includes('nebula') ? (id.includes('high') ? 'gemini-pro-agent' : 'gemini-3.1-pro-low') :
+          id.includes('vortex') ? 'gemini-3.1-pro-low' :
+          id.includes('nebula') ? 'gemini-3.1-pro-low' :
           id.includes('3.8') ? 'gemini-3.8-flash-high' :
           id.includes('3.7') ? 'gemini-3.7-flash-high' :
           'gemini-3.8-flash-high'
