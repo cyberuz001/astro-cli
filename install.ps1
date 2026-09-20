@@ -19,7 +19,7 @@ $reset  = "$esc[0m"
 Write-Host ""
 Write-Host "  ${dim}--------------------------------------------------${reset}"
 Write-Host "  ${vortex}* astro${reset} ${dim}//${reset} ${amber}autonomous ai engine${reset}"
-Write-Host "  ${muted}https://astro-cli.vercel.app${reset}"
+Write-Host "  ${muted}https://www.astroai.uz${reset}"
 Write-Host "  ${dim}--------------------------------------------------${reset}"
 Write-Host ""
 
@@ -90,7 +90,7 @@ try {
     (New-Object System.Net.WebClient).DownloadFile($ProxyScriptUrl, $ProxyScript)
 } catch {
     Write-Host "        ${muted}Fetching proxy from fallback mirror...${reset}"
-    (New-Object System.Net.WebClient).DownloadFile("https://astro-cli.vercel.app/cli/astro-proxy.mjs", $ProxyScript)
+    (New-Object System.Net.WebClient).DownloadFile("https://www.astroai.uz/cli/astro-proxy.mjs", $ProxyScript)
 }
 
 # Resolve or download Node.js runtime for proxy
@@ -218,5 +218,5 @@ Write-Host ""
 Write-Host "  ${muted}Open a NEW terminal window and run:${reset}"
 Write-Host "    ${amber}astro${reset}"
 Write-Host ""
-Write-Host "  ${muted}Documentation & Models:${reset} ${vortex}https://astro-cli.vercel.app${reset}"
+Write-Host "  ${muted}Documentation & Models:${reset} ${vortex}https://www.astroai.uz${reset}"
 Write-Host ""
