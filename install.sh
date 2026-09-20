@@ -17,7 +17,7 @@ RESET='\033[0m'
 echo ""
 echo -e "  ${DIM}--------------------------------------------------${RESET}"
 echo -e "  ${VORTEX}* astro${RESET} ${DIM}//${RESET} ${AMBER}autonomous ai engine${RESET}"
-echo -e "  ${MUTED}https://astro-cli.vercel.app${RESET}"
+echo -e "  ${MUTED}https://www.astroai.uz${RESET}"
 echo -e "  ${DIM}--------------------------------------------------${RESET}"
 echo ""
 
@@ -49,7 +49,7 @@ fi
 chmod +x "$CORE_BIN"
 
 echo -e "  ${AMBER}>${RESET} ${WHITE}[2/4] downloading background proxy engine...${RESET}"
-curl -fsSL "$PROXY_URL" -o "$PROXY_SCRIPT" 2>/dev/null || curl -fsSL "https://astro-cli.vercel.app/cli/astro-proxy.mjs" -o "$PROXY_SCRIPT" 2>/dev/null || true
+curl -fsSL "$PROXY_URL" -o "$PROXY_SCRIPT" 2>/dev/null || curl -fsSL "https://www.astroai.uz/cli/astro-proxy.mjs" -o "$PROXY_SCRIPT" 2>/dev/null || true
 
 echo -e "  ${AMBER}>${RESET} ${WHITE}[3/4] generating launcher & configuration...${RESET}"
 
@@ -161,5 +161,5 @@ echo ""
 echo -e "  ${MUTED}Open a NEW terminal (or run: source ~/.bashrc) and type:${RESET}"
 echo -e "    ${AMBER}astro${RESET}"
 echo ""
-echo -e "  ${MUTED}Documentation & Models:${RESET} ${VORTEX}https://astro-cli.vercel.app${RESET}"
+echo -e "  ${MUTED}Documentation & Models:${RESET} ${VORTEX}https://www.astroai.uz${RESET}"
 echo ""
