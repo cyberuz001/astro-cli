@@ -70,9 +70,9 @@ function geminiToAstroName(geminiId) {
 
 async function fetchAndUpdateModels() {
   try {
-    // 1. Sync with central registry (https://astro-cli.vercel.app/api/models or raw github)
+    // 1. Sync with central registry (https://www.astroai.uz/api/models or raw github)
     const registryUrls = [
-      'https://astro-cli.vercel.app/api/models',
+      'https://www.astroai.uz/api/models',
       'https://raw.githubusercontent.com/cyberuz001/astro-cli/main/cli/models.json'
     ];
     let registryModels = null;
