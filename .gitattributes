@@ -1,0 +1,30 @@
+# Line endings are load-bearing here.
+#
+# install.sh is fetched with `curl | bash` and run on Linux. A single CR in it
+# makes bash fail with "bad interpreter: /usr/bin/env bash^M" before printing
+# anything, and cli/astro-proxy.mjs is read by Node on Linux too. This repo is
+# edited on Windows, where core.autocrlf would otherwise hand out CRLF working
+# copies and let CRLF get committed.
+#
+# Pin LF for everything the installers ship, regardless of local git config.
+
+*.sh      text eol=lf
+*.mjs     text eol=lf
+*.js      text eol=lf
+*.json    text eol=lf
+*.toml    text eol=lf
+*.md      text eol=lf
+stable    text eol=lf
+
+# PowerShell and batch run on Windows only; CRLF is correct for them.
+*.ps1     text eol=crlf
+*.cmd     text eol=crlf
+*.bat     text eol=crlf
+
+# Never touch binaries.
+*.exe     binary
+*.run     binary
+*.png     binary
+*.gz      binary
+*.7z      binary
+*.sfx     binary
