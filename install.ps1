@@ -246,38 +246,7 @@ theme = "oscura-midnight"
 
 [models]
 default = "vortex"
-allowed_models = [
-    "vortex",
-    "nebula-high",
-    "nebula",
-    "photon-3.8",
-    "photon-3.7",
-]
-
-[model.vortex]
-model = "vortex"
-name = "vortex"
-context_window = 1000000
-
-[model.nebula-high]
-model = "nebula-high"
-name = "nebula-high"
-context_window = 200000
-
-[model.nebula]
-model = "nebula"
-name = "nebula"
-context_window = 200000
-
-[model.photon-3.8]
-model = "photon-3.8"
-name = "photon-3.8"
-context_window = 128000
-
-[model.photon-3.7]
-model = "photon-3.7"
-name = "photon-3.7"
-context_window = 128000
+# Available models are discovered from the local proxy at runtime.
 
 [endpoints]
 # 127.0.0.1, not localhost: on most current Windows installs `localhost`

@@ -1,57 +1,7 @@
 [
-  {
-    "id": "vortex",
-    "name": "vortex",
-    "badge": "FLAGSHIP",
-    "speed": "High (~2.0s)",
-    "reasoning": "Deep Multistep",
-    "context": "1,000,000 Tokens",
-    "desc": "Frontier multi-step reasoning engine for complex architectures, large refactors, and full-repo triage.",
-    "color": "border-[#FF4A1C] text-[#FF4A1C]",
-    "accent": "#FF4A1C"
-  },
-  {
-    "id": "nebula-high",
-    "name": "nebula-high",
-    "badge": "HEAVY AGENTIC",
-    "speed": "Moderate (~1.8s)",
-    "reasoning": "Rigorous Verification",
-    "context": "200,000 Tokens",
-    "desc": "Specialized for autonomous agent workflows, deep code search, and systematic test verification.",
-    "color": "border-[#FF7A18] text-[#FF7A18]",
-    "accent": "#FF7A18"
-  },
-  {
-    "id": "nebula",
-    "name": "nebula",
-    "badge": "BALANCED",
-    "speed": "Fast (~1.2s)",
-    "reasoning": "Steady Precision",
-    "context": "200,000 Tokens",
-    "desc": "High-efficiency daily driver balanced for interactive coding, CLI chat, and git workflows.",
-    "color": "border-[#FF944D] text-[#FF944D]",
-    "accent": "#FF944D"
-  },
-  {
-    "id": "photon-3.8",
-    "name": "photon-3.8",
-    "badge": "SUB-30MS",
-    "speed": "Sub-30ms TTFT",
-    "reasoning": "Instant Pair-Coding",
-    "context": "128,000 Tokens",
-    "desc": "Next-gen sub-30ms model designed for real-time completions and fast script synthesis.",
-    "color": "border-[#FFAE19] text-[#FFAE19]",
-    "accent": "#FFAE19"
-  },
-  {
-    "id": "photon-3.7",
-    "name": "photon-3.7",
-    "badge": "LOW LATENCY",
-    "speed": "Sub-50ms TTFT",
-    "reasoning": "Inline Autocomplete",
-    "context": "128,000 Tokens",
-    "desc": "Low-latency engine for instant terminal autocomplete, quick edits, and pair-programming.",
-    "color": "border-[#FFB703] text-[#FFB703]",
-    "accent": "#FFB703"
-  }
+  { "id": "vortex", "name": "vortex", "family": "claude-opus", "desc": "Automatically follows the newest available Opus version." },
+  { "id": "nebula", "name": "nebula", "family": "gemini-argon", "desc": "Argon only. Unavailable when the account has no Argon access; never replaced by Gemini Pro." },
+  { "id": "nebula-high", "name": "nebula-high", "family": "gemini-argon", "effort": "high", "desc": "Argon with high reasoning when supported. Never replaced by another model family." },
+  { "id": "photon-3.8", "name": "photon-3.8", "family": "gemini-flash", "version": "3.8", "desc": "Gemini 3.8 Flash with its available reasoning levels." },
+  { "id": "photon-3.7", "name": "photon-3.7", "family": "gemini-flash", "version": "3.7", "desc": "Gemini 3.7 Flash with its available reasoning levels." }
 ]
