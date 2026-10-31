@@ -14,12 +14,8 @@ DIM='\033[38;2;75;60;55m'
 WHITE='\033[38;2;247;235;232m'
 RESET='\033[0m'
 
-# The astro binary itself is unchanged by this release; every fix here lives
-# in install.sh, install.ps1 and cli/astro-proxy.mjs, all of which are fetched
-# from the main branch at install time. So this still points at the existing
-# v1.0.6 asset - pinning a tag that does not exist would make every install
-# pay a failed request before falling back.
-VERSION="1.0.6"
+# Publish the assets before fast-forwarding main to this installer version.
+VERSION="1.0.7"
 REPO="cyberuz001/astro-cli"
 
 echo ""
@@ -132,6 +128,15 @@ FALLBACK_URL="https://github.com/$REPO/releases/latest/download/astro-$VERSION-l
 PROXY_URL="https://raw.githubusercontent.com/$REPO/main/cli/astro-proxy.mjs"
 PROXY_MIRROR="https://www.astroai.uz/cli/astro-proxy.mjs"
 
+# Download and validate beside the installation before replacing working files.
+# A broken connection must never truncate the existing CLI or proxy.
+CORE_DEST="$CORE_BIN"
+PROXY_DEST="$PROXY_SCRIPT"
+STAGING_DIR="$(mktemp -d "$INSTALL_DIR/.astro-install.XXXXXXXX")"
+trap 'rm -rf -- "$STAGING_DIR"' EXIT
+CORE_BIN="$STAGING_DIR/astro-core"
+PROXY_SCRIPT="$STAGING_DIR/astro-proxy.mjs"
+
 echo -e "  ${AMBER}>${RESET} ${WHITE}[2/5] downloading astro binary...${RESET}"
 
 if fetch "$DOWNLOAD_URL" "$CORE_BIN"; then
@@ -170,6 +175,11 @@ grep -q 'astro-proxy' "$PROXY_SCRIPT" || fail "astro-proxy.mjs does not look lik
 node --check "$PROXY_SCRIPT" 2>/dev/null || fail "astro-proxy.mjs failed a syntax check." \
     "The download is corrupt; please retry."
 echo -e "        ${MUTED}proxy verified.${RESET}"
+
+mv -f -- "$CORE_BIN" "$CORE_DEST"
+mv -f -- "$PROXY_SCRIPT" "$PROXY_DEST"
+CORE_BIN="$CORE_DEST"
+PROXY_SCRIPT="$PROXY_DEST"
 
 echo -e "  ${AMBER}>${RESET} ${WHITE}[4/5] generating launcher & configuration...${RESET}"
 
@@ -248,7 +258,6 @@ auto_update = false
 
 [ui]
 max_thoughts_width = 120
-fork_secondary_model = "nebula"
 yolo = false
 compact_mode = false
 vim_mode = false

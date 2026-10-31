@@ -5,7 +5,7 @@
 **autonomous terminal-native developer ai agent**
 
 [![Release](https://img.shields.io/github/v/release/cyberuz001/astro-cli?color=ea580c&label=version&style=flat-square)](https://github.com/cyberuz001/astro-cli/releases)
-[![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-22c55e?style=flat-square)](https://github.com/cyberuz001/astro-cli)
+[![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux-22c55e?style=flat-square)](https://github.com/cyberuz001/astro-cli)
 [![License](https://img.shields.io/badge/license-proprietary-neutral?style=flat-square)](https://github.com/cyberuz001/astro-cli)
 
 </div>
@@ -19,12 +19,20 @@
 irm https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.ps1 | iex
 ```
 
-#### linux & macos
+#### linux (x86_64, glibc 2.31+)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.sh | bash
 ```
 
 ---
+
+### offline installers — v1.0.7
+
+- [Windows x64 installer](https://github.com/cyberuz001/astro-cli/releases/download/v1.0.7/astro-setup-1.0.7-windows-x64.exe): includes the CLI, proxy and runtime.
+- [Linux x64 installer](https://github.com/cyberuz001/astro-cli/releases/download/v1.0.7/astro-cli-linux-x64.run): download it, then run `bash astro-cli-linux-x64.run`.
+
+Windows 10/11 x64 and Linux x86_64 are supported. macOS/ARM64 builds are not published.
+The Windows installer is unsigned; SmartScreen may display an unknown-publisher prompt.
 
 ### model taxonomy
 
@@ -37,9 +45,10 @@ Family selectors are configured in `cli/models.json`.
 
 `vortex` recognizes major-only versions (such as a hypothetical Opus 5) and
 minor versions; this parsing is regression-tested, not a launch announcement.
-Model catalog refresh does not update the CLI executable. Current installers
-disable the native updater and its notification; software update delivery has
-not yet been verified and is not advertised as working.
+Model catalog refresh does not update the CLI executable. Starting with 1.0.7,
+the CLI checks this repository for newer software versions. Automatic installs
+are off by default; availability checks remain enabled. Stale version pointers
+cannot automatically downgrade the installation.
 
 Use `/effort low`, `/effort medium`, `/effort high`, or `/model photon-3.8 high`.
 Each model exposes only its supported reasoning levels, and the proxy routes
@@ -98,8 +107,8 @@ Linux:
 curl -fsSL https://raw.githubusercontent.com/cyberuz001/astro-cli/main/install.sh | bash
 ```
 
-The native executable remains at the published release version. A new native
-updater build has not been released; `astro update` is not yet a verified upgrade path.
+`astro update` updates the native CLI. Re-run the installer to refresh the entire
+bundle, including the proxy. Existing configuration and Google credentials are preserved.
 
 ---
 

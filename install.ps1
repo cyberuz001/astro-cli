@@ -46,13 +46,16 @@ $ProxyEngine = Join-Path $BinDir "astro-proxy-engine.exe"
 $LauncherCmd = Join-Path $BinDir "astro.cmd"
 $ConfigFile = Join-Path $AstroDir "config.toml"
 
-$DownloadUrl = "https://github.com/cyberuz001/astro-cli/releases/download/v1.0.6/astro-cli-windows-x64.exe"
+$DownloadUrl = "https://github.com/cyberuz001/astro-cli/releases/download/v1.0.7/astro-1.0.7-windows-x86_64.exe"
 $FallbackUrl = "https://github.com/cyberuz001/astro-cli/releases/latest/download/astro-cli-windows-x64.exe"
 $ProxyScriptUrl = "https://raw.githubusercontent.com/cyberuz001/astro-cli/main/cli/astro-proxy.mjs"
 
 Write-Host "  ${amber}>${reset} ${white}[1/4] downloading astro binary...${reset}"
 
 function Download-Package([string]$Url, [string]$OutPath) {
+    $destinationPath = $OutPath
+    $OutPath = Join-Path (Split-Path -Parent $destinationPath) ('.astro-download-' + [guid]::NewGuid().ToString('N') + '.exe')
+    try {
     $request = [System.Net.HttpWebRequest]::Create($Url)
     $request.Timeout = 300000
     $request.AutomaticDecompression = [System.Net.DecompressionMethods]::GZip -bor [System.Net.DecompressionMethods]::Deflate
@@ -97,9 +100,21 @@ function Download-Package([string]$Url, [string]$OutPath) {
         throw "downloaded file is only $([math]::Round($actual/1MB,1)) MB; the release asset looks wrong"
     }
     # The CLI is a PE executable; anything else means we fetched a page.
-    $head = [System.IO.File]::ReadAllBytes($OutPath)[0..1]
+    $headerStream = [System.IO.File]::OpenRead($OutPath)
+    try {
+        $head = New-Object byte[] 2
+        if ($headerStream.Read($head, 0, 2) -ne 2) { throw 'Executable header is truncated' }
+    } finally { $headerStream.Dispose() }
     if ($head[0] -ne 0x4D -or $head[1] -ne 0x5A) {
         throw "downloaded file is not a Windows executable (no MZ header)"
+    }
+    if (Test-Path -LiteralPath $destinationPath) {
+        [System.IO.File]::Replace($OutPath, $destinationPath, [NullString]::Value)
+    } else {
+        [System.IO.File]::Move($OutPath, $destinationPath)
+    }
+    } finally {
+        if (Test-Path -LiteralPath $OutPath) { Remove-Item -LiteralPath $OutPath -Force -ErrorAction SilentlyContinue }
     }
 }
 
@@ -123,6 +138,8 @@ try {
 }
 
 Write-Host "  ${amber}>${reset} ${white}[2/4] downloading proxy engine & background worker...${reset}"
+$ProxyDestination = $ProxyScript
+$ProxyScript = Join-Path $BinDir ('.astro-proxy-download-' + [guid]::NewGuid().ToString('N') + '.mjs')
 try {
     (New-Object System.Net.WebClient).DownloadFile($ProxyScriptUrl, $ProxyScript)
 } catch {
@@ -159,7 +176,12 @@ if (-not (Select-String -Path $ProxyScript -Pattern 'astro-proxy' -Quiet -ErrorA
 $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
 if (-not (Test-Path $ProxyEngine)) {
     if ($nodeCmd) {
-        Copy-Item -Path $nodeCmd.Source -Destination $ProxyEngine -Force -ErrorAction SilentlyContinue
+        # Package managers may expose a shim which cannot run after copying.
+        # Ask Node for the actual executable rather than copying that shim.
+        $nodeExecutable = & $nodeCmd.Source -p 'process.execPath'
+        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $nodeExecutable)) {
+            Copy-Item -LiteralPath $nodeExecutable -Destination $ProxyEngine -Force -ErrorAction SilentlyContinue
+        }
     } else {
         Write-Host "        ${muted}Downloading lightweight proxy runtime...${reset}"
         try {
@@ -179,6 +201,16 @@ if ((-not (Test-Path $ProxyEngine)) -and (-not $nodeCmd)) {
     Write-Host ""
     exit 1
 }
+
+$proxyCheckRuntime = if (Test-Path -LiteralPath $ProxyEngine) { $ProxyEngine } else { $nodeCmd.Source }
+& $proxyCheckRuntime --check $ProxyScript
+if ($LASTEXITCODE -ne 0) { throw 'Downloaded proxy failed its syntax check; the existing proxy is unchanged.' }
+if (Test-Path -LiteralPath $ProxyDestination) {
+    [System.IO.File]::Replace($ProxyScript, $ProxyDestination, [NullString]::Value)
+} else {
+    [System.IO.File]::Move($ProxyScript, $ProxyDestination)
+}
+$ProxyScript = $ProxyDestination
 
 Write-Host "  ${amber}>${reset} ${white}[3/4] configuring launcher & model presets...${reset}"
 
@@ -214,13 +246,10 @@ exit /b 1
 exit /b %errorlevel%
 
 :isup
-REM Anchored on ":5544" followed by LISTENING on the same line. The previous
-REM `findstr "5544"` was an unanchored substring match, so it also matched
-REM port 55440, port 15544 and any PID containing 5544. When it matched, the
-REM launcher assumed the proxy was already running and never started it, so
-REM the CLI came up against a dead port. Whether that happened depended on
-REM what else the machine had open - hence "it only breaks on some PCs".
-netstat -ano | findstr /r /c:":5544 .*LISTENING" >nul 2>&1
+REM Require an actual Astro health response, not just a bound TCP port.
+set "ASTRO_NODE=node"
+if exist "%ASTRO_BIN%astro-proxy-engine.exe" set "ASTRO_NODE=%ASTRO_BIN%astro-proxy-engine.exe"
+"%ASTRO_NODE%" -e "const http=require('http');const req=http.get('http://127.0.0.1:5544/health',res=>{let body='';res.on('data',c=>{body+=c;if(body.length>65536)res.destroy(new Error('oversized health'))});res.on('error',()=>process.exit(1));res.on('end',()=>{try{const v=JSON.parse(body);process.exit(res.statusCode===200 && v.status==='ok' && typeof v.authenticated==='boolean' && Array.isArray(v.models)?0:1)}catch{process.exit(1)}})});req.setTimeout(1500,()=>req.destroy(new Error('timeout')));req.on('error',()=>process.exit(1));" >nul 2>&1
 exit /b %errorlevel%
 "@
 Set-Content -Path $LauncherCmd -Value $launcherContent -Encoding ASCII
@@ -237,7 +266,6 @@ auto_update = false
 
 [ui]
 max_thoughts_width = 120
-fork_secondary_model = "nebula"
 yolo = false
 compact_mode = false
 vim_mode = false
@@ -269,8 +297,14 @@ Write-Host "  ${amber}>${reset} ${white}[4/4] configuring global PATH environmen
 # rewrites PATH as REG_SZ, after which entries that contain %VAR% stop
 # expanding and unrelated tools break. `setx` is worse still: it also
 # truncates at 1024 characters, silently destroying a long PATH.
-$CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($CurrentPath -notlike "*$BinDir*") {
+$CurrentPath = $null
+$pathReadKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment')
+if ($pathReadKey) {
+    try { $CurrentPath = $pathReadKey.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
+    finally { $pathReadKey.Close() }
+}
+$currentPathEntries = @($CurrentPath -split ';' | ForEach-Object { $_.Trim().TrimEnd('\') })
+if ($currentPathEntries -notcontains $BinDir.TrimEnd('\')) {
     $NewPath = if ([string]::IsNullOrEmpty($CurrentPath)) { $BinDir } else { "$BinDir;$CurrentPath" }
     $wrote = $false
     try {
