@@ -1,7 +1,41 @@
 [
-  { "id": "vortex", "name": "vortex", "family": "claude-opus", "desc": "Automatically follows the newest available Opus version." },
-  { "id": "nebula", "name": "nebula", "family": "gemini-argon", "desc": "Argon only. Unavailable when the account has no Argon access; never replaced by Gemini Pro." },
-  { "id": "nebula-high", "name": "nebula-high", "family": "gemini-argon", "effort": "high", "desc": "Argon with high reasoning when supported. Never replaced by another model family." },
-  { "id": "photon-3.8", "name": "photon-3.8", "family": "gemini-flash", "version": "3.8", "desc": "Gemini 3.8 Flash with its available reasoning levels." },
-  { "id": "photon-3.7", "name": "photon-3.7", "family": "gemini-flash", "version": "3.7", "desc": "Gemini 3.7 Flash with its available reasoning levels." }
+  {
+    "id": "vortex",
+    "name": "vortex",
+    "family": "claude-opus",
+    "desc": "Vortex: latest available version."
+  },
+  {
+    "id": "nebula",
+    "name": "nebula",
+    "family": "gemini-argon",
+    "desc": "Nebula: shown only when this family is available to the account."
+  },
+  {
+    "id": "nebula-high",
+    "name": "nebula-high",
+    "family": "gemini-argon",
+    "effort": "high",
+    "desc": "Nebula with high reasoning, when supported."
+  },
+  {
+    "id": "photon",
+    "name": "photon",
+    "family": "gemini-flash",
+    "desc": "Photon: latest available version."
+  },
+  {
+    "id": "photon-3.8",
+    "name": "photon-3.8",
+    "family": "gemini-flash",
+    "version": "3.8",
+    "desc": "Photon 3.8 with its supported reasoning levels."
+  },
+  {
+    "id": "photon-3.7",
+    "name": "photon-3.7",
+    "family": "gemini-flash",
+    "version": "3.7",
+    "desc": "Photon 3.7 with its supported reasoning levels."
+  }
 ]

@@ -53,10 +53,17 @@ const DEFAULT_MODEL_REGISTRY = [
   { id: 'vortex', family: 'claude-opus' },
   { id: 'nebula', family: 'gemini-argon' },
   { id: 'nebula-high', family: 'gemini-argon', effort: 'high' },
+  { id: 'photon', family: 'gemini-flash' },
   { id: 'photon-3.8', family: 'gemini-flash', version: '3.8' },
   { id: 'photon-3.7', family: 'gemini-flash', version: '3.7' }
 ];
-const MODEL_CATALOG_VERSION = 6;
+const MODEL_CATALOG_VERSION = 7;
+const ASTRO_MODEL_FAMILIES = Object.freeze({ photon: 'gemini-flash', nebula: 'gemini-argon', vortex: 'claude-opus' });
+
+function astroModelSelector(id) {
+  const match = /^(photon|nebula|vortex)(?:-(\d+(?:\.\d+)*))?(?:-(low|medium|high))?$/.exec(id);
+  return match ? { brand: match[1], family: ASTRO_MODEL_FAMILIES[match[1]], version: match[2], effort: match[3] } : null;
+}
 const EFFORT_LEVELS = ['low', 'medium', 'high'];
 // Before login/verification we cannot claim that any backend is available.
 let MODEL_MAP = Object.create(null);
@@ -185,15 +192,12 @@ function normalizeRegistry(data) {
     // Older website registries have branding only (or incorrect Flash mappings).
     // The user's fixed Astro taxonomy always wins for these reserved names.
     const reserved = DEFAULT_MODEL_REGISTRY.find(rule => rule.id === m.id);
-    const versioned = m.id.match(/^(photon|nebula|vortex|argon)-(\d+(?:\.\d+)?)$/);
+    const selector = astroModelSelector(m.id);
     if (reserved) return { ...m, backend: undefined, ...reserved, version: reserved.version, effort: reserved.effort };
-    if (versioned) return { ...m, backend: undefined,
-      family: { photon: 'gemini-flash', nebula: 'gemini-argon', vortex: 'claude-opus', argon: 'gemini-argon' }[versioned[1]],
-      version: versioned[2] };
-    if ((typeof m.backend !== 'string' || !m.backend) && (typeof m.family !== 'string' || !m.family))
-      throw new Error('Registry model requires a backend or family selector');
-    return { ...m };
-  });
+    if (selector) return { ...m, backend: undefined,
+      family: selector.family, version: selector.version, effort: selector.effort };
+    return null;
+  }).filter(Boolean);
 }
 
 function normalizeGoogleModels(data, access) {
@@ -271,6 +275,7 @@ function buildModelCatalog(registry, available) {
   const nextMap = Object.create(null), nextMeta = Object.create(null), groups = new Map();
   for (const [backend, provider] of [...available].sort(([a], [b]) => a.localeCompare(b))) {
     const identity = backendIdentity(backend);
+    if (!Object.values(ASTRO_MODEL_FAMILIES).includes(identity.family)) continue;
     let group = groups.get(identity.id);
     if (!group) { group = { ...identity, variants: [] }; groups.set(identity.id, group); }
     group.variants.push({ backend, provider, effort: identity.effort });
@@ -311,6 +316,8 @@ function buildModelCatalog(registry, available) {
     nextMeta[id] = { ...prepared, name: id };
   };
   for (const meta of registry) {
+    const selector = astroModelSelector(meta.id);
+    if (!selector || selector.family !== meta.family) continue;
     const exact = meta.backend && [...groups.values()].find(g => g.variants.some(v => v.backend === meta.backend));
     // An exact pin is not permission to substitute a different model/version.
     if (meta.backend && !exact) continue;
@@ -323,14 +330,10 @@ function buildModelCatalog(registry, available) {
     const chosen = candidates[0];
     if (chosen) add(meta.id, chosen, meta);
   }
-  // An explicitly empty registry disables every model. Otherwise discover all families.
+  // Discover supported Astro versions only. Provider IDs and other families
+  // are never public model choices, even when upstream/registry adds them.
   if (registry.length) for (const group of groups.values()) {
     if (!Object.hasOwn(nextMap, group.id)) add(group.id, group, {});
-    // Preserve the original explicit Argon selector for saved sessions.
-    if (group.family === 'gemini-argon') {
-      const legacyId = `argon-${group.version}${group.suffix}`;
-      if (!Object.hasOwn(nextMap, legacyId)) add(legacyId, group, {});
-    }
   }
   return { MODEL_MAP: nextMap, MODELS_METADATA: nextMeta };
 }
@@ -1730,6 +1733,8 @@ async function handleModels(req, res) {
   res.writeHead(200, { 'Content-Type': 'application/json', Etag: modelCatalogEtag(), 'Cache-Control': 'no-store' });
   const data = Object.entries(MODEL_MAP).map(([id, backend]) => {
     const meta = MODELS_METADATA[id] || {};
+    const brand = id.split('-')[0];
+    const label = brand[0].toUpperCase() + brand.slice(1);
     const ctx = meta.context_window || 128000;
     return {
       id,
@@ -1738,17 +1743,15 @@ async function handleModels(req, res) {
       owned_by: 'astro',
       model: id,
       name: meta.name || id,
-      description: `${meta.family || 'Model'} · ${backend}`,
-      provider_model: backend,
+      description: `${label}${meta.version ? ' ' + meta.version : ''}`,
       context_window: ctx,
       contextWindow: ctx,
       totalContextTokens: ctx,
       maxCompletionTokens: meta.max_output_tokens,
-      modelFamily: meta.family,
+      modelFamily: brand,
       _meta: {
         model: id,
-        providerModel: backend,
-        modelFamily: meta.family,
+        modelFamily: brand,
         contextWindow: ctx,
         totalContextTokens: ctx,
         supportsReasoningEffort: (meta.reasoning_efforts || []).length > 0,

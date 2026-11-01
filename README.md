@@ -36,15 +36,15 @@ The Windows installer is unsigned; SmartScreen may display an unknown-publisher 
 
 ### model taxonomy
 
-Astro maps Flash to Photon, Argon to Nebula, and Opus to Vortex. Photon 3.8
-is Gemini 3.8 Flash. `vortex` follows the newest available Opus version;
-`nebula` follows the newest available Argon only. Without Argon access it is
-absent; Gemini Pro is listed under its own provider name. Versioned models stay pinned.
-Argon and other new model families are discovered from Google's catalog.
+The picker exposes only Photon, Nebula and Vortex, including their available
+versioned variants. Descriptions and public model metadata use Astro names.
+Other provider families are excluded, even if the upstream catalog or an older
+registry lists them. `photon`, `nebula` and `vortex` follow the newest available
+version of their respective family; numbered selections stay pinned.
+Nebula requires Argon access and is absent when that family is unavailable.
+The proxy never substitutes another family to populate a missing choice.
 Family selectors are configured in `cli/models.json`.
 
-`vortex` recognizes major-only versions (such as a hypothetical Opus 5) and
-minor versions; this parsing is regression-tested, not a launch announcement.
 Model catalog refresh does not update the CLI executable. Starting with 1.0.7,
 the CLI checks this repository for newer software versions. Automatic installs
 are off by default; availability checks remain enabled. Stale version pointers
